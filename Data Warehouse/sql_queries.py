@@ -57,7 +57,7 @@ year int)
 
 songplay_table_create = ("""
 create table IF NOT EXISTS "songplay_table" (
-songplay_id int IDENTITY(0,1), 
+songplay_id int IDENTITY(0,1) Primary Key Not Null, 
 start_time timestamp , 
 userId int, 
 level varchar(45), 
@@ -71,7 +71,7 @@ userAgent varchar(45)
 
 user_table_create = ("""
 create table IF NOT EXISTS "user_table"  (
-user_id int,
+user_id int ,
 firstName varchar(45),
 lastName varchar(45),
 gender varchar(10),
@@ -81,7 +81,7 @@ level varchar(45)
 
 song_table_create = ("""
 create table IF NOT EXISTS "song_table" (
-song_id varchar(45),
+song_id varchar(45) primary key not null,
 title varchar(max),
 artist_id varchar(45), 
 year int, 
@@ -91,11 +91,11 @@ duration int
 
 artist_table_create = ("""
 create table IF NOT EXISTS "artist_table" (
-artist_id varchar(45), 
-artist_name varchar(50),
-location varchar(50),
-lattitude varchar(50),
-longitude varchar(50)
+artist_id varchar(max) primary key, 
+artist_name varchar(max),
+location varchar(max),
+lattitude varchar(max),
+longitude varchar(max)
 
 )
 """)
@@ -161,12 +161,13 @@ user_table_insert = ("""
 
 insert into user_table
 select 
-userId, 
+distinct userId, 
 firstName, 
 lastName, 
 gender, 
 level
-from staging_events;
+from staging_events
+WHERE page='NextSong';
 
 
 """)
