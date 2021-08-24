@@ -5,6 +5,11 @@ import configparser
 config = configparser.ConfigParser()
 config.read('dwh.cfg')
 
+ARN             = config.get('IAM_ROLE', 'ARN')
+LOG_DATA        = config.get('S3', 'LOG_DATA')
+LOG_JSONPATH    = config.get('S3', 'LOG_JSONPATH')
+SONG_DATA       = config.get('S3', 'SONG_DATA')
+
 # DROP TABLES
 
 staging_events_table_drop = "drop table  IF EXISTS staging_events"
@@ -34,7 +39,7 @@ sessionId varchar(45),
 song varchar(max),
 status varchar(45),
 ts varchar(max),
-userAgent varchar(45),
+userAgent varchar(max),
 userId int
 
 
@@ -65,7 +70,7 @@ song_id varchar(45) ,
 artist_id varchar(45), 
 sessionId varchar(45) , 
 location varchar(max) , 
-userAgent varchar(45)
+userAgent varchar(max)
 )
 """)
 
@@ -102,7 +107,7 @@ longitude varchar(max)
 
 time_table_create = ("""
 create table IF NOT EXISTS time_table (
-start_time timestamp ,
+start_time timestamp primary key,
 hour int, 
 day int ,
 week int,
@@ -116,21 +121,34 @@ weekday int
 
 staging_events_copy = ("""
 
-Copy staging_events from 's3://udacity-dend/log_data'
-iam_role 'arn:aws:iam::905031933462:role/myRedshiftRole'
-json 'auto' compupdate off region 'us-west-2';
+COPY staging_events FROM {}
+credentials 'aws_iam_role={}'
+format as json {}
+compupdate off
+region 'us-west-2';
+
+                               
 
 
-""").format()
+
+
+
+""").format(LOG_DATA, ARN, LOG_JSONPATH)
 
 staging_songs_copy = ("""
 
-Copy staging_songs from 's3://udacity-dend/song_data/A/A/'
-iam_role 'arn:aws:iam::905031933462:role/myRedshiftRole'
-json 'auto' compupdate off region 'us-west-2';
+    COPY staging_songs FROM {}
+    credentials 'aws_iam_role={}'
+    format as json 'auto'
+    compupdate off
+    region 'us-west-2';
 
 
-""").format()
+
+
+
+
+""").format(SONG_DATA, ARN)
 
 # FINAL TABLES
 
@@ -161,7 +179,7 @@ user_table_insert = ("""
 
 insert into user_table
 select 
-distinct userId, 
+DISTINCT(userId), 
 firstName, 
 lastName, 
 gender, 
@@ -175,7 +193,7 @@ WHERE page='NextSong';
 song_table_insert = ("""
 insert into song_table
 select 
-song_id, 
+DISTINCT(song_id), 
 title, 
 artist_id, 
 year, 
@@ -188,7 +206,7 @@ from staging_songs;
 artist_table_insert = ("""
 insert into artist_table 
 select 
-artist_id, 
+DISTINCT(artist_id), 
 artist_name, 
 artist_location, 
 artist_latitude, 
